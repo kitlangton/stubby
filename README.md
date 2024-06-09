@@ -11,7 +11,7 @@
 A simple stubbing library for ZIO tests.
 
 ```scala
-libraryDependencies += "io.github.kitlangton" %% "stubby" % "0.1.0"
+libraryDependencies += "io.github.kitlangton" %% "stubby" % "0.1.1"
 ```
 
 ### Example Usage
