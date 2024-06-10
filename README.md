@@ -55,6 +55,10 @@ object App:
 Use `stubby` to stub methods and test your application:
 
 ```scala
+import zio.test.*
+import zio.*
+import stubby.*
+
 object AppSpec extends ZIOSpecDefault:
   val spec =
     suiteAll("App") {
