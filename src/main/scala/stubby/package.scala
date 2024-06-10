@@ -7,8 +7,20 @@ import scala.jdk.CollectionConverters.*
 case class MethodId(name: String)
 
 class ServicePartiallyApplied[Service]:
-  inline def apply[Output](inline select: Service => Output)(inline result: Output): URIO[Stubbed[Service], Unit] =
+  inline def apply[Output](inline select: Service => Output)(
+      inline result: Output
+  ): URIO[Stubbed[Service], Unit] =
     ${ Macros.stubImpl('select, 'result) }
+
+  // inline def apply[Output, A](inline select: Service => (A) => Output)(
+  //     inline handler: A => Output
+  // ): URIO[Stubbed[Service], Unit] =
+  //   ${ Macros.stubImpl('select, 'handler) }
+
+  // inline def apply[Output, A, B](inline select: Service => (A, B) => Output)(
+  //     inline handler: (A, B) => Output
+  // ): URIO[Stubbed[Service], Unit] =
+  //   ${ Macros.stubImpl('select, 'handler) }
 
 def any[A]: A = ???
 
@@ -32,13 +44,36 @@ trait Stubbed[A]:
     response.asInstanceOf[A]
 
 object Stubbed:
-  def insert[Service: Tag](
+  def insert[Service: Tag, Value](
       methodId: MethodId,
-      response: Any
+      response: Value
   ): URIO[Stubbed[Service], Unit] =
     ZIO.serviceWithZIO(_.insert(methodId, response))
 
 object Macros:
+
+  def getMethod[Service: Type, Output: Type](using Quotes)(select: Expr[Service => Output]): quotes.reflect.Symbol =
+    import quotes.reflect.*
+    select.asTerm.underlyingArgument match
+
+      // def methodName(arg: Int): Result = ???
+      // stub[Service](_.methodName(any))
+      case Lambda(_, Apply(select @ Select(_, methodName), _)) =>
+        select.symbol
+
+      // def methodName: Result = ???
+      // stub[Service](_.methodName)
+      case Lambda(_, select @ Select(_, methodName)) =>
+        select.symbol
+
+      // def methodName(arg: Int): Result = ???
+      // stub[Service](_.methodName)
+      case Lambda(args, Lambda(_, Apply(select @ Select(_, methodName), _))) =>
+        select.symbol
+
+      case _ =>
+        // TODO: better error message
+        report.errorAndAbort(s"Invalid selector: ${select.show}")
 
   def stubImpl[Service: Type, Output: Type](
       select: Expr[Service => Output],
@@ -46,10 +81,20 @@ object Macros:
   )(using Quotes): Expr[URIO[Stubbed[Service], Unit]] =
     import quotes.reflect.*
 
-    select.asTerm.underlyingArgument match
-      case Lambda(args, body @ Apply(Select(_, methodName), _)) =>
+    val method = getMethod(select)
+    method.termRef.widenTermRefByName.returnType.asType match
+      case '[t] =>
+        val resultExpr =
+          try result.asExprOf[t]
+          catch
+            case _: Exception =>
+              report.errorAndAbort(
+                s"Expected ${Type.show[t]} but got ${result.asTerm.tpe.widen.show}",
+                result.asTerm.pos
+              )
+
         '{
-          Stubbed.insert[Service](MethodId(${ Expr(methodName) }), $result)
+          Stubbed.insert[Service, t](MethodId(${ Expr(method.name) }), $resultExpr)
         }
 
   def stubbedImpl[Service: Type](using Quotes): Expr[ULayer[Service & Stubbed[Service]]] =

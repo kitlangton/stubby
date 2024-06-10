@@ -62,3 +62,9 @@ lazy val root = project
       "org.scala-lang" %% "scala3-compiler" % scala3Version % "provided"
     )
   )
+
+/////////////////////
+// Command Aliases //
+/////////////////////
+
+addCommandAlias("prepare", "scalafmtAll; scalafixAll")
