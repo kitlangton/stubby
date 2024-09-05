@@ -5,6 +5,7 @@ import scala.quoted.*
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.*
 
+// I hope this works out.
 case class MethodId(name: String)
 
 enum StubResult:
@@ -21,12 +22,18 @@ enum StubResult:
 
   def call(args: Array[Any]): Any =
     this match
-      case Value(value)                                         => value
-      case F1(f: (Any => Any) @unchecked)                       => f(args(0))
-      case F2(f: ((Any, Any) => Any) @unchecked)                => f(args(0), args(1))
-      case F3(f: ((Any, Any, Any) => Any) @unchecked)           => f(args(0), args(1), args(2))
-      case F4(f: ((Any, Any, Any, Any) => Any) @unchecked)      => f(args(0), args(1), args(2), args(3))
-      case F5(f: ((Any, Any, Any, Any, Any) => Any) @unchecked) => f(args(0), args(1), args(2), args(3), args(4))
+      case Value(value) => value
+
+      case F1(f: (Any => Any) @unchecked) =>
+        f(args(0))
+      case F2(f: ((Any, Any) => Any) @unchecked) =>
+        f(args(0), args(1))
+      case F3(f: ((Any, Any, Any) => Any) @unchecked) =>
+        f(args(0), args(1), args(2))
+      case F4(f: ((Any, Any, Any, Any) => Any) @unchecked) =>
+        f(args(0), args(1), args(2), args(3))
+      case F5(f: ((Any, Any, Any, Any, Any) => Any) @unchecked) =>
+        f(args(0), args(1), args(2), args(3), args(4))
       case F6(f: ((Any, Any, Any, Any, Any, Any) => Any) @unchecked) =>
         f(args(0), args(1), args(2), args(3), args(4), args(5))
       case F7(f: ((Any, Any, Any, Any, Any, Any, Any) => Any) @unchecked) =>
@@ -35,6 +42,7 @@ enum StubResult:
         f(args(0), args(1), args(2), args(3), args(4), args(5), args(6), args(7))
       case F9(f: ((Any, Any, Any, Any, Any, Any, Any, Any, Any) => Any) @unchecked) =>
         f(args(0), args(1), args(2), args(3), args(4), args(5), args(6), args(7), args(8))
+      case _ => throw new IllegalArgumentException("Invalid stub result")
 
 object StubResult:
   def makeF[A, B](f: A => B): StubResult                                                   = StubResult.F1(f)

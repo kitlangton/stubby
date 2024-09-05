@@ -1,4 +1,4 @@
-val scala3Version = "3.4.2"
+val scala3Version = "3.3.3"
 
 inThisBuild(
   List(
@@ -48,10 +48,20 @@ ThisBuild / githubWorkflowPublish := Seq(
 // Project Definitions //
 /////////////////////////
 
-val zioVersion = "2.1.2"
+val zioVersion = "2.1.9"
 
 lazy val root = project
   .in(file("."))
+  .settings(
+    publish / skip := true
+  )
+  .aggregate(
+    core,
+    example
+  )
+
+lazy val core = project
+  .in(file("./modules/core"))
   .settings(
     name         := "stubby",
     scalaVersion := scala3Version,
@@ -62,6 +72,19 @@ lazy val root = project
       "org.scala-lang" %% "scala3-compiler" % scala3Version % "provided"
     )
   )
+
+lazy val example = project
+  .in(file("example"))
+  .settings(
+    name := "stubby-example",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio"          % zioVersion,
+      "dev.zio" %% "zio-test"     % zioVersion % Test,
+      "dev.zio" %% "zio-test-sbt" % zioVersion % Test
+      // "org.mockito" %% "mockito-scala" % "1.17.31"  % Test
+    )
+  )
+  .dependsOn(core)
 
 /////////////////////
 // Command Aliases //

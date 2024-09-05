@@ -9,6 +9,8 @@ case class User(id: Int, name: String)
 trait ExampleService:
   def effectWithParams(id: Int): Task[User]
 
+  def effectIdentity[A](id: A): Task[A]
+
   def effectWithoutParams: Task[Int]
 
   def pureWithParams(id: Int): Int
@@ -42,9 +44,20 @@ object StubbySpec extends ZIOSpecDefault:
 
         suiteAll("effectful method with params") {
 
+          // test("what") {
+          //   for
+          //     _ <- stub[ExampleService](_.effectIdentity[Int]) {
+          //            //  12
+          //            ZIO.succeed(User(1, "Foo"))
+          //          }
+          //     result <- ExampleService.effectWithParams(1)
+          //   yield assertTrue(result == User(1, "Foo"))
+          // }
+
           test("succeeds when leaving off the params") {
             for
               _ <- stub[ExampleService](_.effectWithParams) {
+                     //  12
                      ZIO.succeed(User(1, "Foo"))
                    }
               result <- ExampleService.effectWithParams(1)
@@ -131,3 +144,9 @@ object StubbySpec extends ZIOSpecDefault:
     }.provide(
       stubbed[ExampleService]
     )
+
+// val stubbed = new ExampleService:
+//   // val ref = Map[String, Any]
+
+//   def overloadedEffect(id: Int): Task[User] =
+//     ???
