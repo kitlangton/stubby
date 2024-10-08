@@ -8,7 +8,7 @@ class StubPartiallyApplied[Service]:
 
   inline def apply[Output, Result](inline select: Service => Output)(
       inline result: Result
-  ): URIO[Stubbed[Service], Unit] =
+  ): URIO[Stubbed[Service], StubUsage] =
     ${ Macros.stubImpl('select, 'result) }
 
 def any[A]: A = ???

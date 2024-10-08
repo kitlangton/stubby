@@ -63,6 +63,17 @@ object AppSpec extends ZIOSpecDefault:
             result <- App.destroy
           yield assertTrue(result == "Planet destroyed")
         }
+
+        test("counts calls") {
+          for
+            stubUsage <- stub[MagicAPI](_.destroyPlanet(any)) {
+                           ZIO.succeed(())
+                         }
+            _ <- App.destroy
+            _ <- App.destroy
+            _ <- App.destroy
+          yield assertTrue(stubUsage.calls == 3)
+        }
       }
 
       suiteAll("stub pure method") {
@@ -74,6 +85,16 @@ object AppSpec extends ZIOSpecDefault:
                  }
             result <- App.usePure
           yield assertTrue(result == "Pure Magic: Hello")
+        }
+
+        test("counts calls") {
+          for
+            stubUsage <- stub[MagicAPI](_.pureMethod(any)) {
+                           "Hello"
+                         }
+            _ <- App.usePure
+            _ <- App.usePure
+          yield assertTrue(stubUsage.calls == 2)
         }
       }
 

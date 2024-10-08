@@ -3,7 +3,9 @@ package stubby
 import zio.*
 import scala.quoted.*
 import java.util.concurrent.ConcurrentHashMap
+import scala.collection.concurrent
 import scala.jdk.CollectionConverters.*
+import java.util.concurrent.atomic.AtomicInteger
 
 // I hope this works out.
 case class MethodId(name: String)
@@ -55,29 +57,47 @@ object StubResult:
   def makeF[A, B, C, D, E, F, G, H, I](f: (A, B, C, D, E, F, G, H) => I): StubResult       = StubResult.F8(f)
   def makeF[A, B, C, D, E, F, G, H, I, J](f: (A, B, C, D, E, F, G, H, I) => J): StubResult = StubResult.F9(f)
 
+class StubUsage(
+    _calls: AtomicInteger = new AtomicInteger(0)
+):
+  private[stubby] def incrementCalls(): Unit = _calls.incrementAndGet()
+
+  def calls: Int = _calls.get()
+
 trait Stubbed[A]:
   protected val $ref: ConcurrentHashMap[MethodId, StubResult] = new ConcurrentHashMap()
+  protected val $usage: concurrent.Map[MethodId, StubUsage]   = new ConcurrentHashMap().asScala
 
-  protected def insertValue(methodId: MethodId, response: Any): UIO[Unit] =
-    ZIO.succeed($ref.put(methodId, StubResult.Value(response)))
+  protected def insertValue(methodId: MethodId, response: Any): UIO[StubUsage] =
+    val stubUsage = StubUsage()
+    for
+      _ <- ZIO.succeed($usage.put(methodId, stubUsage))
+      _ <- ZIO.succeed($ref.put(methodId, StubResult.Value(response)))
+    yield stubUsage
 
-  protected def insertFunction(methodId: MethodId, f: StubResult): UIO[Unit] =
-    ZIO.succeed($ref.put(methodId, f))
+  protected def insertFunction(methodId: MethodId, f: StubResult): UIO[StubUsage] =
+    val stubUsage = StubUsage()
+    for
+      _ <- ZIO.succeed($usage.put(methodId, stubUsage))
+      _ <- ZIO.succeed($ref.put(methodId, f))
+    yield stubUsage
 
   def callStubbed[A](methodId: MethodId, args: Array[Any]): A =
     val response = $ref.getOrDefault(methodId, null)
     if response == null then throw new IllegalArgumentException("No stub found for methodId: " + methodId)
-    else response.call(args).asInstanceOf[A]
+    else
+      $usage.get(methodId).foreach(_.incrementCalls())
+      response.call(args).asInstanceOf[A]
 
 object Stubbed:
   def insertValue[Service: Tag, Value](
       methodId: MethodId,
       response: Value
-  ): URIO[Stubbed[Service], Unit] =
+  ): URIO[Stubbed[Service], StubUsage] =
     ZIO.serviceWithZIO(_.insertValue(methodId, response))
 
   def insertFunction[Service: Tag](
       methodId: MethodId,
       f: StubResult
-  ): URIO[Stubbed[Service], Unit] =
+  ): URIO[Stubbed[Service], StubUsage] =
     ZIO.serviceWithZIO(_.insertFunction(methodId, f))

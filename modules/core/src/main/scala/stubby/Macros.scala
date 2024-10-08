@@ -34,7 +34,7 @@ object Macros:
   def stubImpl[Service: Type, Output: Type](
       select: Expr[Service => Output],
       result: Expr[Output]
-  )(using Quotes): Expr[URIO[Stubbed[Service], Unit]] =
+  )(using Quotes): Expr[URIO[Stubbed[Service], StubUsage]] =
     import quotes.reflect.*
 
     val method = getMethod(select)
