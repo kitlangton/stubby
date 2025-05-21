@@ -90,4 +90,4 @@ lazy val example = project
 // Command Aliases //
 /////////////////////
 
-addCommandAlias("prepare", "scalafmtAll; scalafixAll")
+addCommandAlias("prepare", "scalafmtAll; scalafixAll; githubWorkflowGenerate")
