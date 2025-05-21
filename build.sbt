@@ -1,4 +1,4 @@
-val scala3Version = "3.3.3"
+val scala3Version = "3.3.6"
 
 inThisBuild(
   List(
@@ -48,7 +48,7 @@ ThisBuild / githubWorkflowPublish := Seq(
 // Project Definitions //
 /////////////////////////
 
-val zioVersion = "2.1.9"
+val zioVersion = "2.1.18"
 
 lazy val root = project
   .in(file("."))
