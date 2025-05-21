@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [3.4.2]
+        scala: [3.3.6]
         java: [temurin@17]
     runs-on: ${{ matrix.os }}
     steps:
@@ -40,6 +40,9 @@ jobs:
           java-version: 17
           cache: sbt
 
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
       - name: Check that workflows are up to date
         run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
@@ -47,7 +50,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' test
 
       - name: Compress target directories
-        run: tar cf targets.tar target project/target
+        run: tar cf targets.tar target modules/core/target example/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v4
@@ -62,7 +65,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [3.4.2]
+        scala: [3.3.6]
         java: [temurin@17]
     runs-on: ${{ matrix.os }}
     steps:
@@ -79,12 +82,15 @@ jobs:
           java-version: 17
           cache: sbt
 
-      - name: Download target directories (3.4.2)
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Download target directories (3.3.6)
         uses: actions/download-artifact@v4
         with:
-          name: target-${{ matrix.os }}-3.4.2-${{ matrix.java }}
+          name: target-${{ matrix.os }}-3.3.6-${{ matrix.java }}
 
-      - name: Inflate target directories (3.4.2)
+      - name: Inflate target directories (3.3.6)
         run: |
           tar xf targets.tar
           rm targets.tar
